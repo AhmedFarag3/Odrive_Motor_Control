@@ -1,7 +1,7 @@
 //*******************************************************************************
 //*   Author  : Ahmed Farag                                                      *
-//*   Date    : 01/04/2022                                                       *
-//*   Version : V03                                                              *
+//*   Date    : 14/04/2022                                                       *
+//*   Version : V05                                                              *
 //*******************************************************************************
 // includes
 #include <HardwareSerial.h>
@@ -24,7 +24,6 @@ template<>        inline Print& operator <<(Print &obj, float arg) {
 
 float Left_Wheel_Velocity_In_RPS_G ;
 float Right_Wheel_Velocity_In_RPS_G;
-int requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL;
 int axisnum = 0;
 
 
@@ -88,7 +87,7 @@ void cmd_vel_cb(const geometry_msgs::Twist &cmdvel)
     Right_Wheel_Velocity_In_RPS_G  = Right_Wheel_Velocity_In_RPS;
 
   }
-    nh.loginfo("Received");
+   // nh.loginfo("Received");
 
 
 }
@@ -131,8 +130,10 @@ void loop() {
   float VelM1 = odrive.GetVelocity(1);
 
   float diff = VelM0 - VelM1;
-  // Read Vel R= -0.24
-  //Read Vel L= -0.06
+  
+// Read Vel R= -0.24
+//Read Vel L= -0.06
+
   if (diff < -0.02) {
     float ratio = VelM1 / VelM0;
     float IncSpeed = 1 - ratio;
@@ -167,11 +168,10 @@ void loop() {
   nh.loginfo((String("Read Pos L= ") + String(PosM1).c_str()).c_str());
   nh.loginfo("-----------------------------------------------------------------------------------");
 
-
+  // Motor movement
   odrive.SetVelocity(0, Right_Wheel_Velocity_In_RPS_G);
   odrive.SetVelocity(1, Left_Wheel_Velocity_In_RPS_G);
-//  delay(5);
 
   nh.spinOnce();
-  delay(1);
+  delay(1); 
 }
