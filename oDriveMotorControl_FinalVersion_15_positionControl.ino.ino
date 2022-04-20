@@ -12,15 +12,7 @@
 #include <geometry_msgs/Twist.h>
 #include <std_msgs/Float32.h>
 
-// Printing with stream operator helper functions
-template<class T> inline Print& operator <<(Print &obj,     T arg) {
-  obj.print(arg);
-  return obj;
-}
-template<>        inline Print& operator <<(Print &obj, float arg) {
-  obj.print(arg, 4);
-  return obj;
-}
+
 
 // Define Global variables to be sent to the set velocity command 
 float Left_Wheel_Velocity_In_RPS_G ;
@@ -51,6 +43,11 @@ ODriveArduino odrive(odrive_serial);
 
 // Create node handle to manage pub and sub
 ros::NodeHandle nh;
+
+// Create a standard msg for publisher
+std_msgs::Float32 Left_Wheel_Pos;
+std_msgs::Float32 Right_Wheel_Pos;
+
 
 // Call back function 
 void cmd_vel_cb(const geometry_msgs::Twist &cmdvel)
@@ -97,6 +94,10 @@ void cmd_vel_cb(const geometry_msgs::Twist &cmdvel)
 // Creating a ros subscriber for cmd_vel topic
 ros::Subscriber<geometry_msgs::Twist> cmd_vel_sub("cmd_vel", &cmd_vel_cb);
 
+// Creating a ros publisher for wheels position 
+ros::Publisher Left_wheel_Odmetry ("Left_wheel_Odmetry",   &Left_Wheel_Pos);
+ros::Publisher Right_wheel_Odmetry("Right_wheel_Odmetry",  &Right_Wheel_Pos);
+
 
 void setup() {
 
@@ -110,10 +111,16 @@ void setup() {
   odrive_serial.begin(115200);
 
 
-  // Initialization node function
-  nh.initNode();
-  //Subscriber node for cmd vel topic
-  nh.subscribe(cmd_vel_sub);
+// Initialization node function
+nh.initNode();
+
+//Subscriber node for cmd vel topic
+nh.subscribe(cmd_vel_sub);
+
+//advertise odom  topics
+nh.advertise(Left_wheel_Odmetry);
+nh.advertise(Right_wheel_Odmetry);
+
 
   //start serial with ROS
   Serial.begin(115000);
@@ -126,6 +133,7 @@ if((digitalRead(Sensor_One_Input_Pin)==1) || (digitalRead(Sensor_Two_Input_Pin)=
 {
 //Serial.println("Object Detected");
 odrive.SetVelocity(0,0);
+
 }
 
 
@@ -183,6 +191,13 @@ if(Angle_Speed == 0)
   odrive.SetVelocity(0, Right_Wheel_Velocity_In_RPS_G);
   odrive.SetVelocity(1, Left_Wheel_Velocity_In_RPS_G);
 
+  //Get the pos of each wheel and publish it to ROS topics left wheel odmetry and right wheel odometry
+  Left_Wheel_Pos.data = odrive.GetPosition(0);
+  Left_wheel_Odmetry.publish(&Left_Wheel_Pos);
+  
+  Right_Wheel_Pos.data = odrive.GetPosition(1);
+  Right_wheel_Odmetry.publish(&Right_Wheel_Pos);
+  
   nh.spinOnce();
   delay(1); 
 }
